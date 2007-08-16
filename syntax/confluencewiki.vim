@@ -3,7 +3,7 @@
 " Confluence WIKI syntax file
 "
 " Language:    Confluence WIKI
-" Version:     0.0.1
+" Version:     0.0.2
 " Maintainer:  Daniel Graña <daniel{AT}insophia{DOT}com>
 " License:     GPL (http://www.gnu.org/licenses/gpl.txt)
 "    Copyright (C) 2004  Rainer Thierfelder
@@ -74,7 +74,7 @@ syntax match confluenceSingleList "^-\ze "
 " tag support is a limited to no white spaces in tag parameters
 syntax match confluenceTag      "{\w\+\(:\(\w\+=\?[a-zA-Z0-9 ]\+|\?\)*\)\?}"
 
-"syntax region confluenceComment  start="<!--" end="-->"
+syntax region confluenceComment  start="{HTMLcomment\(:hidden\)\?}" end="{HTMLcomment}"
 
 syntax region confluenceCode matchgroup=confluenceCode
     \ start="{code}" end="{code}"
