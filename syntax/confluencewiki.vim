@@ -3,8 +3,9 @@
 " Confluence WIKI syntax file
 "
 " Language:    Confluence WIKI
-" Version:     0.0.2
-" Maintainer:  Daniel Graña <daniel{AT}insophia{DOT}com>
+" Version:     0.1.0
+" Maintainer:  Daniel Grana <daniel{AT}insophia{DOT}com>
+" Thanks:      Ingo Karkat <swdev{AT}ingo-karkat{DOT}de>
 " License:     GPL (http://www.gnu.org/licenses/gpl.txt)
 "    Copyright (C) 2004  Rainer Thierfelder
 "
@@ -44,6 +45,11 @@ else
   command! -nargs=+ ConfluenceSynColor highlight default <args>
 endif
 
+if v:version >= 700
+  syntax spell toplevel
+endif 
+
+
 "============================================================================
 " Group Definitions:    
 "============================================================================
@@ -51,91 +57,138 @@ endif
 " Emphasis:  
 function! s:ConfluenceCreateEmphasis(token, name)
     execute 'syntax region confluence'.a:name.
-           \' oneline start="\(^\|[ ]\)\zs'.a:token.
-           \'" end="'.a:token.'\ze\([,. ?):-]\|$\)"'
+    \' oneline start="\(^\|[ ]\)\zs'.a:token.'\%('.a:token.'\)\@!'.
+    \'" end="'.a:token.'\ze\([,. ?!()[\]{}:\-]\|$\)"'
 endfunction
 
-syntax region confluenceFixed oneline start="\(^\|[ ]\)\zs{{" end="}}\ze\([,. ?):-]\|$\)"
+syntax region confluenceFixed oneline start="\(^\|[ ]\)\zs{{" end="}}\ze\([,. ?!()[\]{}):\-]\|$\)"
+" Note: Confluence 2.10.1 ignores escaping of \{{monospaced}} (same as {{monospaced}}). 
+syntax region confluenceFixed oneline start="{{" end="}}\ze\([,. ?!()[\]{}):\-]\|$\)" contained
 
-call s:ConfluenceCreateEmphasis('+', 'Underlined')
 call s:ConfluenceCreateEmphasis('\*', 'Bold')
 call s:ConfluenceCreateEmphasis('_',  'Italic')
+call s:ConfluenceCreateEmphasis('??', 'Citation')
 call s:ConfluenceCreateEmphasis('-', 'Strike')
+call s:ConfluenceCreateEmphasis('+', 'Underlined')
+call s:ConfluenceCreateEmphasis('\^', 'Superscript')
+call s:ConfluenceCreateEmphasis('\~', 'Subscript')
 
 
 " Syntax:  
+" Note: Confluence 2.10.1 ignores escaping of \{{monospaced}} (same as {{monospaced}}). 
+"syntax match confluenceEscaping "\\\%(??\|{{\|[*_\-+^~{!\[(]\)" contains=confluenceEscapeCharacter
+syntax match confluenceEscaping "\\\%(??\|{{\|[*_\-+^~{!\[(]\)" contains=confluenceEscapeCharacter,confluenceFixed
+syntax match confluenceEscapeCharacter "\\" contained
 syntax match confluenceDelimiter "|"
-syntax match confluenceSeparator    "^----*"
+syntax match confluenceDelimiter "||[^|]" contains=confluenceTableHeader
+syntax match confluenceDelimiter "[^|]||"
+syntax match confluenceTableHeader "||\zs[^|]\+\ze||" contained contains=ALLBUT,confluenceDelimiter
+syntax match confluenceSymbols "\%(^\|\s\)\zs-\{2,3}\ze\%($\|\s\)"
+syntax match confluenceSeparator    "^\s*----\s*$"
 syntax match confluenceList "^[*#]\+\ze "
 syntax match confluenceSingleList "^-\ze "
 
 "syntax match confluenceVariable "\([^!]\|^\)\zs%\w\+%"
 
 " tag support is a limited to no white spaces in tag parameters
-syntax match confluenceTag      "{\w\+\(:\(\w\+=\?[a-zA-Z0-9 ]\+|\?\)*\)\?}"
+syntax match confluenceTagParameterName      "[:|]\zs\w\+=\?[^|}]\+" contained contains=@NoSpell,confluenceTagParameterValue
+syntax match confluenceTagParameterValue     "\w\+=\zs[^|}]\+" contained contains=@NoSpell
+syntax match confluenceTag                   "{\%(\w\|-\)\+\(:\(\w\+=\?[^|}]\+|\?\)*\)\?}" contains=@NoSpell,confluenceTagParameterName
 
-syntax region confluenceComment  start="{HTMLcomment\(:hidden\)\?}" end="{HTMLcomment}"
+syntax region confluenceComment start="{HTMLcomment\%(:hidden\)\?}" end="{HTMLcomment}" keepend contains=TOP
 
-syntax region confluenceCode matchgroup=confluenceCode
-    \ start="{code}" end="{code}"
+syntax match confluenceCodeTag "{code\(:\(\w\+=\?[^|}]\+|\?\)*\)\?}" contains=confluenceTagParameterName,@NoSpell contained
+syntax region confluenceCode start="{code\(:\(\w\+=\?[^|}]\+|\?\)*\)\?}" end="{code}" keepend contains=confluenceCodeTag
+syntax match confluenceVerbatimTag "{noformat\(:\(\w\+=\?[^|}]\+|\?\)*\)\?}" contains=confluenceTagParameterName,@NoSpell contained
+syntax region confluenceVerbatim start="{noformat\(:\(\w\+=\?[^|}]\+|\?\)*\)\?}" end="{noformat}" keepend contains=confluenceVerbatimTag
 
-syntax region confluenceQuote matchgroup=confluenceQuote
-    \ start="{quote}" end="{quote}"
+syntax match confluenceQuoteMarker "^bq. " contains=@NoSpell contained
+syntax match confluenceQuote "^bq. .*$" contains=confluenceQuoteMarker
+syntax region confluenceQuote start="{quote}" end="{quote}" keepend contains=TOP
 
-syntax region confluenceVerbatim matchgroup=confluenceVerbatim
-    \ start="{noformat}" end="{noformat}"
+syntax match confluenceHeadingMarker "^h[1-6]. " contains=@NoSpell contained
+syntax match confluenceHeading "^h[1-6]. .*$" contains=confluenceHeadingMarker
 
-syntax region confluenceHeading matchgroup=confluenceHeadingMarker oneline
-    \ start="^h[1-9]. " end="$"
+" Note: Confluence 2.10.1 does not escape smileys \:) \:( \:P \:D \;)
+syntax match confluenceEmoticons "\%(^\|\s\)\zs\%(:)\|:(\|:P\|:D\|;)\)\ze\%($\|\s\)"
+syntax match confluenceEmoticons "\%(^\|[^\\]\)\zs([yni/x!+-?*])\|(\%(on\|off\))"
 
 let s:wikiWord = '\u[a-z0-9]\+\(\u[a-z0-9]\+\)\+'
 
 execute 'syntax match confluenceAnchor +^#'.s:wikiWord.'\ze\(\>\|_\)+'
 execute 'syntax match confluenceWord +\(\s\|^\)\zs\(\u\l\+\.\)\='.s:wikiWord.'\(#'.s:wikiWord.'\)\=\ze\(\>\|_\)+'
-" Regex guide:                   ^pre        ^web name       ^wikiword  ^anchor               ^ post
+" Regex guide:                        ^pre        ^web name       ^wikiword  ^anchor               ^ post
+
+" Images: 
+syntax match confluenceImageParameterName      "[,|]\zs\w\+=\?[^,!]\+" contained contains=confluenceImageParameterValue,@NoSpell
+syntax match confluenceImageParameterValue     "\w\+=\zs[^,!]\+" contained contains=@NoSpell
+syntax match confluenceImageLink               "!\zs\S[^|!]*" contained contains=@NoSpell
+syntax match confluenceImage "!\S[^!]*\S!" contains=confluenceImageLink,confluenceImageParameterName
 
 " Links: 
-syntax region confluenceLink matchgroup=confluenceLinkMarker
-    \ start="\( \|^\)\zs\[" end="\]\ze\([,. ?):-]\|$\)"
-    \ contains=confluenceForcedLink,confluenceLinkRef keepend
+syntax match confluenceLink "\[[^|\]]\+\]" contains=confluenceLinkStart,confluenceLinkEnd,@NoSpell
+syntax match confluenceLink "\[[^|\]]\+|[^|\]]\+\]" contains=confluenceLinkMarker,confluenceLinkEnd,confluenceLinkLabel,@NoSpell
+syntax match confluenceLink "\[[^|\]]\+|[^|\]]\+|[^|\]]\+\]" contains=confluenceLinkMarker,confluenceLinkLabel,confluenceLinkTip,@NoSpell
 
-execute 'syntax match confluenceForcedLink +[ A-Za-z0-9]\+\(#'.s:wikiWord.'\)\=+ contained'
-
-syntax match confluenceLinkLabel    ".\{-}\ze\["
-    \ contained contains=confluenceLinkMarker nextgroup=confluenceLinkLabel
-syntax match confluenceLinkRef  ".\{-}\ze\]"   contained contains=confluenceLinkMarker
-syntax match confluenceLinkMarker "|"           contained
+syntax match confluenceLinkLabel    "\[[^|\]]\+\ze|" contained contains=confluenceLinkStart
+syntax match confluenceLinkTip  "[^|\]]\+\]"   contained contains=confluenceLinkEnd
+syntax match confluenceLinkMarker "|"          contained
+syntax match confluenceLinkStart "\["          contained
+syntax match confluenceLinkEnd "\]"            contained
 
 "============================================================================
 " Group Linking:    
 "============================================================================
 
-ConfluenceHiLink confluenceHeading       String
-ConfluenceHiLink confluenceHeadingMarker Operator
+ConfluenceHiLink confluenceEscapeCharacter Type
+ConfluenceHiLink confluenceHeading       Title
+ConfluenceHiLink confluenceHeadingMarker Type
 ConfluenceHiLink confluenceVariable      PreProc
+ConfluenceHiLink confluenceTagParameterName   Type
+ConfluenceHiLink confluenceTagParameterValue  Constant
+ConfluenceHiLink confluenceCodeTag       PreProc
+ConfluenceHiLink confluenceVerbatimTag   PreProc
 ConfluenceHiLink confluenceTag           PreProc
-ConfluenceHiLink confluenceQuote         PreProc
+ConfluenceHiLink confluenceQuoteMarker   Type
+ConfluenceHiLink confluenceQuote         String
 ConfluenceHiLink confluenceComment       Comment
 ConfluenceHiLink confluenceWord          Tag
 ConfluenceHiLink confluenceAnchor        PreProc
 ConfluenceHiLink confluenceVerbatim      Constant
 ConfluenceHiLink confluenceCode          Constant
-ConfluenceHiLink confluenceList          Operator
-ConfluenceHiLink confluenceSingleList    Operator
+ConfluenceHiLink confluenceList          Type
+ConfluenceHiLink confluenceSingleList    Type
+ConfluenceSynColor confluenceTableHeader term=bold cterm=bold gui=bold
 
-ConfluenceHiLink confluenceDelimiter     Operator
+ConfluenceHiLink confluenceDelimiter     Type
+ConfluenceHiLink confluenceSeparator     Type
+
+ConfluenceHiLink confluenceEmoticons     Special
+ConfluenceHiLink confluenceSymbols       Special
+
+" Images
+ConfluenceHiLink confluenceImageParameterName  Type
+ConfluenceHiLink confluenceImageParameterValue Constant
+ConfluenceHiLink confluenceImageLink           Underlined
+ConfluenceHiLink confluenceImage               PreProc
 
 " Links
-ConfluenceSynColor confluenceLinkMarker term=bold cterm=bold gui=bold
-ConfluenceHiLink   confluenceForcedLink Tag
-ConfluenceHiLink   confluenceLinkRef    Tag
+ConfluenceHiLink   confluenceLinkMarker Type
+ConfluenceHiLink   confluenceLinkStart  Type
+ConfluenceHiLink   confluenceLinkEnd    Type
+ConfluenceHiLink   confluenceLink       Underlined
 ConfluenceHiLink   confluenceLinkLabel  Identifier
+ConfluenceHiLink   confluenceLinkTip    NonText
 
 " Emphasis
-ConfluenceSynColor confluenceFixed      term=underline cterm=underline gui=underline
-ConfluenceSynColor confluenceItalic     term=italic cterm=italic gui=italic
+ConfluenceHiLink   confluenceFixed      Constant
 ConfluenceSynColor confluenceBold       term=bold cterm=bold gui=bold
-ConfluenceSynColor confluenceSingleList term=bold cterm=bold gui=bold
+ConfluenceSynColor confluenceItalic     term=italic cterm=italic gui=italic
+ConfluenceHiLink   confluenceCitation   String
+ConfluenceHiLink   confluenceStrike     Special
+ConfluenceSynColor confluenceUnderlined term=underline cterm=underline gui=underline
+ConfluenceHiLink   confluenceSuperscript Special
+ConfluenceHiLink   confluenceSubscript  Special
 
 "============================================================================}" Clean Up:    {{{1
 "============================================================================
