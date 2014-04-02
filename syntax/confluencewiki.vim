@@ -56,14 +56,11 @@ endif
 
 " Emphasis:  
 function! s:ConfluenceCreateEmphasis(token, name)
+    let [startToken, endToken] = (type(a:token) == type([]) ? a:token : [a:token, a:token])
     execute 'syntax region confluence'.a:name.
-    \' oneline start="\(^\|[ ]\)\zs'.a:token.'\%('.a:token.'\)\@!'.
-    \'" end="'.a:token.'\ze\([,. ?!()[\]{}:\-]\|$\)"'
+    \' oneline start="\(^\|\([,. ?!()[\]{}:;\-]\|$\)\)\zs'.startToken.'\%('.startToken.'\)\@!'.
+    \'" end="'.endToken.'\ze\([,. ?!()[\]{}:;\-]\|$\)"'
 endfunction
-
-syntax region confluenceFixed oneline start="\(^\|[ ]\)\zs{{" end="}}\ze\([,. ?!()[\]{}):\-]\|$\)"
-" Note: Confluence 2.10.1 ignores escaping of \{{monospaced}} (same as {{monospaced}}). 
-syntax region confluenceFixed oneline start="{{" end="}}\ze\([,. ?!()[\]{}):\-]\|$\)" contained
 
 call s:ConfluenceCreateEmphasis('\*', 'Bold')
 call s:ConfluenceCreateEmphasis('_',  'Italic')
@@ -72,6 +69,9 @@ call s:ConfluenceCreateEmphasis('-', 'Strike')
 call s:ConfluenceCreateEmphasis('+', 'Underlined')
 call s:ConfluenceCreateEmphasis('\^', 'Superscript')
 call s:ConfluenceCreateEmphasis('\~', 'Subscript')
+call s:ConfluenceCreateEmphasis(['{{', '}}'], 'Fixed')
+" Note: Confluence 2.10.1 ignores escaping of \{{monospaced}} (same as {{monospaced}}). 
+syntax region confluenceFixed oneline start="{{" end="}}\ze\([,. ?!()[\]{}:\-]\|$\)" contained
 
 
 " Syntax:  
