@@ -3,9 +3,10 @@
 " Confluence WIKI syntax file
 "
 " Language:    Confluence WIKI
-" Version:     0.1.0
-" Maintainer:  Daniel Grana <daniel{AT}insophia{DOT}com>
+" Version:     1.0.1
+" Maintainer:  Daniel Grana <dangra{AT}gmail{DOT}com>
 " Thanks:      Ingo Karkat <swdev{AT}ingo-karkat{DOT}de>
+"              Robin Lee Powell <rlpowell@digitalkingdom.org>
 " License:     GPL (http://www.gnu.org/licenses/gpl.txt)
 "    Copyright (C) 2004  Rainer Thierfelder
 "
@@ -73,6 +74,13 @@ call s:ConfluenceCreateEmphasis(['{{', '}}'], 'Fixed')
 " Note: Confluence 2.10.1 ignores escaping of \{{monospaced}} (same as {{monospaced}}). 
 syntax region confluenceFixed oneline start="{{" end="}}\ze\([,. ?!()[\]{}:\-]\|$\)" contained
 
+" Folding:
+syntax region confluenceH1 start="^h1. " end=/^h1. /me=s-1 transparent fold contains=confluenceH2,confluenceH3,confluenceH4,confluenceH5,confluenceH6,confluenceHeading keepend
+syntax region confluenceH2 start="^h2. " end=/^h2. /me=s-1 transparent fold contains=confluenceH3,confluenceH4,confluenceH5,confluenceH6,confluenceHeading keepend
+syntax region confluenceH3 start="^h3. " end=/^h3. /me=s-1 transparent fold contains=confluenceH4,confluenceH5,confluenceH6,confluenceHeading keepend
+syntax region confluenceH4 start="^h4. " end=/^h4. /me=s-1 transparent fold contains=confluenceH5,confluenceH6,confluenceHeading keepend
+syntax region confluenceH5 start="^h5. " end=/^h5. /me=s-1 transparent fold contains=confluenceH6,confluenceHeading keepend
+syntax region confluenceH6 start="^h6. " end=/^h6. /me=s-1 transparent fold contains=confluenceHeading keepend
 
 " Syntax:  
 " Note: Confluence 2.10.1 ignores escaping of \{{monospaced}} (same as {{monospaced}}). 
